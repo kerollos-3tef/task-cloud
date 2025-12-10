@@ -1,0 +1,56 @@
+name: Firebase Deploy + Java Tests + Email
+
+on:
+  push:
+    branches:
+      - main   # كل مرة تعمل Push على الفرع الرئيسي
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout الكود
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'   # أو النسخة اللي محتاجها
+          distribution: 'temurin'
+
+      # 3. Run Java Test Cases
+      - name: Run Java tests
+        run: |
+          javac -d out src/*.java
+          java -cp out org.junit.runner.JUnitCore YourTestClass
+          
+      # 4. Setup Node & Firebase
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'   # أو النسخة اللي محتاجها
+
+      - name: Install Firebase Tools
+        run: npm install -g firebase-tools
+
+      # 5. Deploy to Firebase Hosting
+      - name: Deploy to Firebase
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: firebase deploy --only hosting --token "$FIREBASE_TOKEN"
+
+      # 6. Send Email Notification
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: Firebase Deploy & Java Tests Completed
+          body: Your Firebase deploy and Java tests ran successfully ✅
+          to: your-email@gmail.com
+          from: ${{ secrets.EMAIL_USERNAME }}
